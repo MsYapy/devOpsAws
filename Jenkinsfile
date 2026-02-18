@@ -23,16 +23,10 @@ pipeline {
         // 3) Despliegue SAM
         stage('Deploy') {
             steps {
-                       sh '''
-                    echo "=== Desplegando a Staging con SAM ==="
-
-                    # Build de la aplicación SAM
-                    sam validate --region us-east-1
-                    sam build --template template.yaml
-
-                    # Deploy a Staging
-                    sam deploy \
-                        --stack-name resCP14Yapy-staging \
+                sh 'sam validate --region us-east-1'
+                sh 'sam build'
+                sh '''sam deploy \
+                        --stack-name resCP14yapy-staging \
                         --region us-east-1 \
                         --parameter-overrides Stage=staging \
                         --capabilities CAPABILITY_IAM \
@@ -48,7 +42,7 @@ pipeline {
             steps {
                 script {
                     env.BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name resCP14Yapy-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
+                        script: "aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
                         returnStdout: true
                     ).trim()
                     echo "BASE_URL: ${env.BASE_URL}"
@@ -87,3 +81,4 @@ pipeline {
         }
     }
 }
+
