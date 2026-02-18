@@ -23,9 +23,23 @@ pipeline {
         // 3) Despliegue SAM
         stage('Deploy') {
             steps {
-                sh 'sam validate --region us-east-1'
-                sh 'sam build'
-                sh 'sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset'
+                       sh '''
+                    echo "=== Desplegando a Staging con SAM ==="
+
+                    # Build de la aplicación SAM
+                    sam validate --region us-east-1
+                    sam build --template template.yaml
+
+                    # Deploy a Staging
+                    sam deploy \
+                        --stack-name resCP14Yapy-staging \
+                        --region us-east-1 \
+                        --parameter-overrides Stage=staging \
+                        --capabilities CAPABILITY_IAM \
+                        --no-disable-rollback \
+                        --resolve-s3 \
+                        --no-fail-on-empty-changeset
+                    '''
             }
         }
         
@@ -34,7 +48,7 @@ pipeline {
             steps {
                 script {
                     env.BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name resCP14-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
+                        script: "aws cloudformation describe-stacks --stack-name resCP14Yapy-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
                         returnStdout: true
                     ).trim()
                     echo "BASE_URL: ${env.BASE_URL}"
