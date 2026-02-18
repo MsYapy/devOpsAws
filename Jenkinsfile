@@ -5,7 +5,7 @@ pipeline {
         // 1) Traer el código de la rama development
         stage('Get Code') {
             steps {
-                git branch: 'development', url: 'https://github.com/TU_USUARIO/TU_REPOSITORIO.git'
+                git branch: 'develop', url: 'https://github.com/MsYapy/devOpsAws'
             }
         }
         
@@ -23,9 +23,9 @@ pipeline {
         // 3) Despliegue SAM
         stage('Deploy') {
             steps {
-                sh 'sam validate'
+                sh 'sam validate --region us-east-1'
                 sh 'sam build'
-                sh 'sam deploy --no-confirm-changeset --no-fail-on-empty-changeset'
+                sh 'sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --region us-east-1'
             }
         }
         
