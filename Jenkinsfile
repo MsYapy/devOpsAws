@@ -25,7 +25,7 @@ pipeline {
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
-                sh 'sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --region us-east-1'
+                sh 'sam deploy --config-env staging --no-confirm-changeset --no-fail-on-empty-changeset'
             }
         }
         
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     env.BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name staging-todo-list-aws --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
+                        script: "aws cloudformation describe-stacks --stack-name resCP14-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
                         returnStdout: true
                     ).trim()
                     echo "BASE_URL: ${env.BASE_URL}"
