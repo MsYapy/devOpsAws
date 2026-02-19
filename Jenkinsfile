@@ -6,10 +6,13 @@ pipeline {
     }
 
     stages {
+
         // 1) Obtener código
         stage('Get Code') {
             steps {
-                git branch: "${params.BRANCH}", url: 'https://github.com/MsYapy/devOpsAws.git', credentialsId: 'yy'
+                git branch: "${params.BRANCH}", 
+                    url: 'https://github.com/MsYapy/devOpsAws.git', 
+                    credentialsId: 'yy'
                 script {
                     echo "Rama seleccionada: ${params.BRANCH}"
                 }
@@ -67,24 +70,35 @@ pipeline {
 
         // 5) Promote - merge a master (solo develop)
         stage('Promote') {
-         when { expression { params.BRANCH == 'develop' } }
-         steps {
-           script {
-             sh '''
-               
-                git remote set-url origin git@github.com:MsYapy/devOpsAws.git
-                git config user.email "jenkins@ci.local"
-                git config user.name "Jenkins CI"
-                git config merge.ours.driver true
-                git fetch origin master
-                git checkout master || git checkout -b master origin/master
-                git merge develop --no-edit --no-ff
-                git push origin master
-             '''
-         }
-      }
-    }
+            when { expression { params.BRANCH == 'develop' } }
+            steps {
+                script {
+                    sh '''
+                        # 1. Usar SSH en el repo
+                        git remote set-url origin git@github.com:MsYapy/devOpsAws.git
 
+                        # 2. Configurar identidad
+                        git config user.email "jenkins@ci.local"
+                        git config user.name "Jenkins CI"
+                        git config merge.ours.driver true
+
+                        # 3. Traer info fresca
+                        git fetch origin master
+
+                        # 4. Ir a master
+                        git checkout master || git checkout -b master origin/master
+
+                        # 5. Merge forzado con commit
+                        git merge develop --no-edit --no-ff
+
+                        # 6. Push
+                        git push origin master
+                    '''
+                }
+            }
+        }
+
+    }
 
     post {
         always {
