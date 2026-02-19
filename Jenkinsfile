@@ -1,12 +1,26 @@
 pipeline {
     agent any
 
+    environment {
+        BRANCH_NAME_DETECTED = ''
+    }
+
     stages {
         // 1) Obtener código
         stage('Get Code') {
             steps {
-                // Multibranch: Jenkins detecta la rama automáticamente
                 checkout scm
+                script {
+                    env.BRANCH_NAME_DETECTED = sh(
+                        script: 'git rev-parse --abbrev-ref HEAD || git name-rev --name-only HEAD',
+                        returnStdout: true
+                    ).trim()
+                    // Si HEAD está detached, intentar detectar desde GIT_BRANCH
+                    if (env.BRANCH_NAME_DETECTED == 'HEAD') {
+                        env.BRANCH_NAME_DETECTED = (env.GIT_BRANCH ?: 'unknown').replaceAll('origin/', '')
+                    }
+                    echo "Rama detectada: ${env.BRANCH_NAME_DETECTED}"
+                }
             }
         }
 
@@ -16,7 +30,7 @@ pipeline {
 
         // 2) Pruebas estáticas (solo develop)
         stage('Static Analysis') {
-            when { branch 'develop' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
             steps {
                 sh '''bandit --exit-zero -r src/ -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"'''
                 recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')]
@@ -28,7 +42,7 @@ pipeline {
 
         // 3) Deploy a staging (solo develop)
         stage('Deploy Staging') {
-            when { branch 'develop' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
@@ -46,7 +60,7 @@ pipeline {
 
         // 4) Tests de integración en staging (solo develop)
         stage('Rest Test Staging') {
-            when { branch 'develop' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
             steps {
                 script {
                     env.BASE_URL = sh(
@@ -61,7 +75,7 @@ pipeline {
 
         // 5) Promote - merge a master (solo develop)
         stage('Promote') {
-            when { branch 'develop' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
             steps {
                 script {
                     sh "sed -i 's/\\[1.0.0\\] - 2021-01-08/[1.0.1] - 2021-01-08/g' CHANGELOG.md"
@@ -86,7 +100,7 @@ pipeline {
 
         // 6) Deploy a producción (solo master)
         stage('Deploy Production') {
-            when { branch 'master' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'master' } }
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
@@ -104,7 +118,7 @@ pipeline {
 
         // 7) Tests de integración en producción (solo master)
         stage('Rest Test Production') {
-            when { branch 'master' }
+            when { expression { env.BRANCH_NAME_DETECTED == 'master' } }
             steps {
                 script {
                     env.BASE_URL = sh(
@@ -124,4 +138,3 @@ pipeline {
         }
     }
 }
-
