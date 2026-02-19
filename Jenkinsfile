@@ -71,26 +71,14 @@ pipeline {
          steps {
            script {
              sh '''
-                # 1. Asegurar el uso de SSH con tu repo específico
+               
                 git remote set-url origin git@github.com:MsYapy/devOpsAws.git
-
-                # 2. Configurar identidad y el driver 'ours' para el .gitattributes
                 git config user.email "jenkins@ci.local"
                 git config user.name "Jenkins CI"
                 git config merge.ours.driver true
-
-                # 3. Traer info fresca del servidor
                 git fetch origin master
-
-                # 4. Ir a master (crearla si no existe localmente en el agente)
                 git checkout master || git checkout -b master origin/master
-
-                # 5. EL MERGE CRÍTICO:
-                # --no-ff: Obliga a crear un commit de merge. Sin esto, Git hace 
-                # fast-forward e ignora el .gitattributes, borrando tu Jenkinsfile de CD.
                 git merge develop --no-edit --no-ff
-
-                # 6. Push a master usando la conexión SSH
                 git push origin master
              '''
          }
