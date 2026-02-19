@@ -11,14 +11,25 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    env.BRANCH_NAME_DETECTED = sh(
-                        script: 'git rev-parse --abbrev-ref HEAD || git name-rev --name-only HEAD',
+                    // Detectar rama: probar múltiples métodos
+                    def branch = sh(
+                        script: 'git rev-parse --abbrev-ref HEAD',
                         returnStdout: true
                     ).trim()
-                    // Si HEAD está detached, intentar detectar desde GIT_BRANCH
-                    if (env.BRANCH_NAME_DETECTED == 'HEAD') {
-                        env.BRANCH_NAME_DETECTED = (env.GIT_BRANCH ?: 'unknown').replaceAll('origin/', '')
+
+                    if (branch == 'HEAD') {
+                        // Detached HEAD: buscar en refs remotas
+                        branch = sh(
+                            script: "git branch -r --contains HEAD | head -1 | sed 's|origin/||' | tr -d ' '",
+                            returnStdout: true
+                        ).trim()
                     }
+
+                    if (!branch || branch == '') {
+                        branch = 'unknown'
+                    }
+
+                    env.BRANCH_NAME_DETECTED = branch
                     echo "Rama detectada: ${env.BRANCH_NAME_DETECTED}"
                 }
             }
