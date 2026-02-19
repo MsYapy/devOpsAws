@@ -69,36 +69,38 @@ pipeline {
         }
 
         // 5) Promote - merge a master (solo develop)
-        stage('Promote') {
-            when { expression { params.BRANCH == 'develop' } }
-            steps {
-                script {
-                    sh '''
-                        # 1. Usar SSH en el repo
-                        git remote set-url origin git@github.com:MsYapy/devOpsAws.git
+      stage('Promote') {
+    when { expression { params.BRANCH == 'develop' } }
+    steps {
+        // Usamos el ID de la credencial que Jenkins ya reconoció como 'yy'
+        sshagent(['yy']) {
+            script {
+                sh '''
+                    # 1. Forzar SSH
+                    git remote set-url origin git@github.com:MsYapy/devOpsAws.git
 
-                        # 2. Configurar identidad
-                        git config user.email "jenkins@ci.local"
-                        git config user.name "Jenkins CI"
-                        git config merge.ours.driver true
+                    # 2. Configurar identidad y driver
+                    git config user.email "jenkins@ci.local"
+                    git config user.name "Jenkins CI"
+                    git config merge.ours.driver true
 
-                        # 3. Traer info fresca
-                        git fetch origin master
+                    # 3. Sincronizar ramas (Ahora con acceso a la llave SSH)
+                    git fetch origin master
 
-                        # 4. Ir a master
-                        git checkout master || git checkout -b master origin/master
+                    # 4. Ir a master
+                    git checkout master || git checkout -b master origin/master
 
-                        # 5. Merge forzado con commit
-                        git merge develop --no-edit --no-ff
+                    # 5. Merge sin fast-forward para que actúe el .gitattributes
+                    # Esto mantendrá el Jenkinsfile original de master
+                    git merge develop --no-edit --no-ff
 
-                        # 6. Push
-                        git push origin master
-                    '''
-                }
+                    # 6. Push a master
+                    git push origin master
+                '''
             }
         }
-
     }
+}
 
     post {
         always {
