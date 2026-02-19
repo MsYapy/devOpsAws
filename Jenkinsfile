@@ -1,19 +1,17 @@
 pipeline {
     agent any
 
-    environment {
-        BRANCH_NAME_DETECTED = ''
+    parameters {
+        choice(name: 'BRANCH', choices: ['develop', 'master'], description: 'Rama a ejecutar')
     }
 
     stages {
         // 1) Obtener código
         stage('Get Code') {
             steps {
+                git branch: "${params.BRANCH}", url: 'https://github.com/MsYapy/devOpsAws.git', credentialsId: 'yy'
                 script {
-                    def scmVars = checkout scm
-                    // GIT_BRANCH viene como 'origin/develop' o 'origin/master'
-                    env.BRANCH_NAME_DETECTED = scmVars.GIT_BRANCH.replaceAll('origin/', '')
-                    echo "Rama detectada: ${env.BRANCH_NAME_DETECTED}"
+                    echo "Rama seleccionada: ${params.BRANCH}"
                 }
             }
         }
@@ -24,7 +22,7 @@ pipeline {
 
         // 2) Pruebas estáticas (solo develop)
         stage('Static Analysis') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
+            when { expression { params.BRANCH == 'develop' } }
             steps {
                 sh '''bandit --exit-zero -r src/ -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"'''
                 recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')]
@@ -36,7 +34,7 @@ pipeline {
 
         // 3) Deploy a staging (solo develop)
         stage('Deploy Staging') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
+            when { expression { params.BRANCH == 'develop' } }
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
@@ -54,7 +52,7 @@ pipeline {
 
         // 4) Tests de integración en staging (solo develop)
         stage('Rest Test Staging') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
+            when { expression { params.BRANCH == 'develop' } }
             steps {
                 script {
                     env.BASE_URL = sh(
@@ -69,7 +67,7 @@ pipeline {
 
         // 5) Promote - merge a master (solo develop)
         stage('Promote') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'develop' } }
+            when { expression { params.BRANCH == 'develop' } }
             steps {
                 script {
                     sh "sed -i 's/\\[1.0.0\\] - 2021-01-08/[1.0.1] - 2021-01-08/g' CHANGELOG.md"
@@ -94,7 +92,7 @@ pipeline {
 
         // 6) Deploy a producción (solo master)
         stage('Deploy Production') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'master' } }
+            when { expression { params.BRANCH == 'master' } }
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
@@ -112,7 +110,7 @@ pipeline {
 
         // 7) Tests de integración en producción (solo master)
         stage('Rest Test Production') {
-            when { expression { env.BRANCH_NAME_DETECTED == 'master' } }
+            when { expression { params.BRANCH == 'master' } }
             steps {
                 script {
                     env.BASE_URL = sh(
