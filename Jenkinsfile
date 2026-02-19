@@ -70,16 +70,11 @@ pipeline {
             when { expression { params.BRANCH == 'develop' } }
             steps {
                 script {
-                    sh "sed -i 's/\\[1.0.0\\] - 2021-01-08/[1.0.1] - 2021-01-08/g' CHANGELOG.md"
                     sh '''
                         git config user.email "jenkins@ci.local"
                         git config user.name "Jenkins CI"
-                        git add CHANGELOG.md
-                        git commit -m "Release 1.0.1"
                         git checkout master
-                        git merge development --no-edit -X theirs
-                        git checkout development -- Jenkinsfile
-                        git commit --amend --no-edit
+                        git merge develop --no-edit
                         git push origin master
                     '''
                 }
