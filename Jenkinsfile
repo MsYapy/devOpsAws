@@ -9,27 +9,10 @@ pipeline {
         // 1) Obtener código
         stage('Get Code') {
             steps {
-                checkout scm
                 script {
-                    // Detectar rama: probar múltiples métodos
-                    def branch = sh(
-                        script: 'git rev-parse --abbrev-ref HEAD',
-                        returnStdout: true
-                    ).trim()
-
-                    if (branch == 'HEAD') {
-                        // Detached HEAD: buscar en refs remotas
-                        branch = sh(
-                            script: "git branch -r --contains HEAD | head -1 | sed 's|origin/||' | tr -d ' '",
-                            returnStdout: true
-                        ).trim()
-                    }
-
-                    if (!branch || branch == '') {
-                        branch = 'unknown'
-                    }
-
-                    env.BRANCH_NAME_DETECTED = branch
+                    def scmVars = checkout scm
+                    // GIT_BRANCH viene como 'origin/develop' o 'origin/master'
+                    env.BRANCH_NAME_DETECTED = scmVars.GIT_BRANCH.replaceAll('origin/', '')
                     echo "Rama detectada: ${env.BRANCH_NAME_DETECTED}"
                 }
             }
