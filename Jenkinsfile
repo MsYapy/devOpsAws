@@ -67,57 +67,36 @@ pipeline {
 
         // 5) Promote - merge a master (solo develop)
         stage('Promote') {
-            when { expression { params.BRANCH == 'develop' } }
-            steps {
-                script {
-                    sh '''
-                        git config user.email "jenkins@ci.local"
-                        git config user.name "Jenkins CI"
-                        git checkout master
-                        git merge develop --no-edit
-                        git push origin master
-                    '''
-                }
-            }
-        }
+         when { expression { params.BRANCH == 'develop' } }
+         steps {
+           script {
+             sh '''
+                # 1. Asegurar el uso de SSH con tu repo específico
+                git remote set-url origin git@github.com:MsYapy/devOpsAws.git
 
-        // =============================================
-        // STAGES CD - Solo rama master
-        // =============================================
+                # 2. Configurar identidad y el driver 'ours' para el .gitattributes
+                git config user.email "jenkins@ci.local"
+                git config user.name "Jenkins CI"
+                git config merge.ours.driver true
 
-        // 6) Deploy a producción (solo master)
-        stage('Deploy Production') {
-            when { expression { params.BRANCH == 'master' } }
-            steps {
-                sh 'sam validate --region us-east-1'
-                sh 'sam build'
-                sh '''sam deploy \
-                        --stack-name todo-list-aws-production \
-                        --region us-east-1 \
-                        --parameter-overrides Stage=production \
-                        --capabilities CAPABILITY_IAM \
-                        --no-disable-rollback \
-                        --resolve-s3 \
-                        --no-fail-on-empty-changeset
-                    '''
-            }
-        }
+                # 3. Traer info fresca del servidor
+                git fetch origin master
 
-        // 7) Tests de integración en producción (solo master)
-        stage('Rest Test Production') {
-            when { expression { params.BRANCH == 'master' } }
-            steps {
-                script {
-                    env.BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name todo-list-aws-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
-                        returnStdout: true
-                    ).trim()
-                    echo "BASE_URL: ${env.BASE_URL}"
-                }
-                sh 'pytest test/integration/todoApiTest.py'
-            }
-        }
+                # 4. Ir a master (crearla si no existe localmente en el agente)
+                git checkout master || git checkout -b master origin/master
+
+                # 5. EL MERGE CRÍTICO:
+                # --no-ff: Obliga a crear un commit de merge. Sin esto, Git hace 
+                # fast-forward e ignora el .gitattributes, borrando tu Jenkinsfile de CD.
+                git merge develop --no-edit --no-ff
+
+                # 6. Push a master usando la conexión SSH
+                git push origin master
+             '''
+         }
+      }
     }
+
 
     post {
         always {
