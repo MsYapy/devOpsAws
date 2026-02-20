@@ -94,25 +94,19 @@ pipeline {
                             git checkout master || git checkout -b master origin/master
 
                             # Guardar Jenkinsfile de master antes del merge
-                            cp Jenkinsfile Jenkinsfile.master.bak
+                            git show HEAD:Jenkinsfile > /tmp/Jenkinsfile.master.bak
 
-                            # Hacer merge aceptando todo de develop excepto lo que restauremos
+                            # Hacer merge
                             git merge develop --no-edit --no-ff || {
-                                # Resolver conflictos: código de develop, Jenkinsfile de master
                                 git checkout --theirs . 2>/dev/null || true
-                                git checkout --ours Jenkinsfile 2>/dev/null || true
                                 git add -A
                                 git commit --no-edit -m "Merge branch 'develop'"
                             }
 
-                            # Restaurar siempre el Jenkinsfile de master
-                            mv Jenkinsfile.master.bak Jenkinsfile
+                            # Restaurar Jenkinsfile de master siempre
+                            cp /tmp/Jenkinsfile.master.bak Jenkinsfile
                             git add Jenkinsfile
-                            
-                            # Si hay cambios, hacer amend al commit de merge
-                            if ! git diff --cached --quiet; then
-                                git commit --amend --no-edit
-                            fi
+                            git commit --amend --no-edit
 
                             git push origin master
                         '''
