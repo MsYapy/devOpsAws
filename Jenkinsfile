@@ -100,7 +100,6 @@ pipeline {
                                 git add -A
                                 git commit --no-edit -m "Merge branch 'develop' (auto-resolved)"
                             }
-
                             git push origin master
                         '''
                     }
