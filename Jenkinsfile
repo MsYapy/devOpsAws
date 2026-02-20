@@ -10,7 +10,6 @@ pipeline {
     }
 
     stages {
-        // 1) Obtener código
         stage('Get Code') {
             steps {
                 git branch: "${params.BRANCH}",
@@ -27,7 +26,6 @@ pipeline {
         // STAGES CI - Solo rama develop
         // =============================================
 
-        // 2) Pruebas estáticas
         stage('Static Analysis') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -41,7 +39,6 @@ pipeline {
             }
         }
 
-        // 3) Deploy a staging
         stage('Deploy Staging') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -62,7 +59,6 @@ pipeline {
             }
         }
 
-        // 4) Tests integración
         stage('Rest Test Staging') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -81,8 +77,6 @@ pipeline {
             }
         }
 
-
-        // 5) Promote - merge a master
         stage('Promote') {
             when {
                 expression { params.BRANCH == 'develop' }
