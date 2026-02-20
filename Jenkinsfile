@@ -93,13 +93,27 @@ pipeline {
                             git fetch origin master
                             git checkout master || git checkout -b master origin/master
 
-                            # Merge con estrategia que mantiene archivos de master en conflictos
-                            git merge develop --no-edit --no-ff -X ours || {
-                                # Si aún hay conflictos, resolverlos manteniendo versión de master
-                                git checkout --ours .gitattributes Jenkinsfile 2>/dev/null || true
+                            # Guardar Jenkinsfile de master antes del merge
+                            cp Jenkinsfile Jenkinsfile.master.bak
+
+                            # Hacer merge aceptando todo de develop excepto lo que restauremos
+                            git merge develop --no-edit --no-ff || {
+                                # Resolver conflictos: código de develop, Jenkinsfile de master
+                                git checkout --theirs . 2>/dev/null || true
+                                git checkout --ours Jenkinsfile 2>/dev/null || true
                                 git add -A
-                                git commit --no-edit -m "Merge branch 'develop' (auto-resolved)"
+                                git commit --no-edit -m "Merge branch 'develop'"
                             }
+
+                            # Restaurar siempre el Jenkinsfile de master
+                            mv Jenkinsfile.master.bak Jenkinsfile
+                            git add Jenkinsfile
+                            
+                            # Si hay cambios, hacer amend al commit de merge
+                            if ! git diff --cached --quiet; then
+                                git commit --amend --no-edit
+                            fi
+
                             git push origin master
                         '''
                     }
