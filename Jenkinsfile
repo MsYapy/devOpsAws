@@ -10,7 +10,6 @@ pipeline {
     }
 
     stages {
-
         // 1) Obtener código
         stage('Get Code') {
             steps {
@@ -82,6 +81,7 @@ pipeline {
             }
         }
 
+
         // 5) Promote - merge a master
         stage('Promote') {
             when {
@@ -115,4 +115,3 @@ pipeline {
         }
     }
 }
-
