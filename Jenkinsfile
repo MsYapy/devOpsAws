@@ -10,7 +10,6 @@ pipeline {
     }
 
     stages {
-        // 1) Obtener código
         stage('Get Code') {
             steps {
                 git branch: "${params.BRANCH}",
@@ -27,7 +26,6 @@ pipeline {
         // STAGES CI - Solo rama develop
         // =============================================
 
-        // 2) Pruebas estáticas
         stage('Static Analysis') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -41,7 +39,6 @@ pipeline {
             }
         }
 
-        // 3) Deploy a staging
         stage('Deploy Staging') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -62,7 +59,6 @@ pipeline {
             }
         }
 
-        // 4) Tests integración
         stage('Rest Test Staging') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -81,8 +77,6 @@ pipeline {
             }
         }
 
-
-        // 5) Promote - merge a master
         stage('Promote') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -95,12 +89,18 @@ pipeline {
 
                             git config user.email "jenkins@ci.local"
                             git config user.name "Jenkins CI"
-                            git config merge.ours.driver true
 
                             git fetch origin master
                             git checkout master || git checkout -b master origin/master
 
-                            git merge develop --no-edit --no-ff
+                            # Merge con estrategia que mantiene archivos de master en conflictos
+                            git merge develop --no-edit --no-ff -X ours || {
+                                # Si aún hay conflictos, resolverlos manteniendo versión de master
+                                git checkout --ours .gitattributes Jenkinsfile 2>/dev/null || true
+                                git add -A
+                                git commit --no-edit -m "Merge branch 'develop' (auto-resolved)"
+                            }
+
                             git push origin master
                         '''
                     }
