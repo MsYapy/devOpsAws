@@ -24,7 +24,7 @@ image_repositories = []
 [production]
 [production.deploy]
 [production.deploy.parameters]
-stack_name = "todo-list-aws-production"
+stack_name = "resCP14Yapy-production"
 s3_prefix = "todo-list-aws"
 region = "us-east-1"
 capabilities = "CAPABILITY_IAM"

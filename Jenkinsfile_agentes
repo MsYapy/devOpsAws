@@ -1,37 +1,26 @@
 pipeline {
     agent none
 
-    parameters {
-        choice(
-            name: 'BRANCH',
-            choices: ['develop', 'master'],
-            description: 'Rama a ejecutar'
-        )
-    }
-
     stages {
         stage('Get Code') {
             agent { label 'linux-agent-1' }
             steps {
-                git branch: "${params.BRANCH}",
+                git branch: 'develop',
                     url: 'https://github.com/MsYapy/devOpsAws.git',
                     credentialsId: 'yy'
 
                 script {
-                    echo "Rama seleccionada: ${params.BRANCH}"
+                    echo "Iniciando pipeline CI/CD completo"
                 }
                 stash includes: '**', name: 'source-code'
             }
         }
 
         // =============================================
-        // STAGES CI - Solo rama develop
+        // STAGES CI - Staging
         // =============================================
 
         stage('Static Analysis') {
-            when {
-                expression { params.BRANCH == 'develop' }
-            }
             parallel {
                 stage('Bandit Security') {
                     agent { label 'linux-agent-1' }
@@ -53,9 +42,6 @@ pipeline {
         }
 
         stage('Deploy Staging') {
-            when {
-                expression { params.BRANCH == 'develop' }
-            }
             agent { label 'linux-agent-1' }
             steps {
                 unstash 'source-code'
@@ -75,9 +61,6 @@ pipeline {
         }
 
         stage('Rest Test Staging') {
-            when {
-                expression { params.BRANCH == 'develop' }
-            }
             agent { label 'linux-agent-2' }
             steps {
                 unstash 'source-code'
@@ -87,7 +70,7 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    echo "BASE_URL: ${env.BASE_URL}"
+                    echo "BASE_URL Staging: ${env.BASE_URL}"
                 }
 
                 // Staging: ejecuta TODOS los tests (lectura y escritura)
@@ -96,13 +79,10 @@ pipeline {
         }
 
         // =============================================
-        // STAGES CD - Solo rama master (Production)
+        // STAGES CD - Production
         // =============================================
 
         stage('Deploy Production') {
-            when {
-                expression { params.BRANCH == 'master' }
-            }
             agent { label 'linux-agent-1' }
             steps {
                 unstash 'source-code'
@@ -122,9 +102,6 @@ pipeline {
         }
 
         stage('Rest Test Production') {
-            when {
-                expression { params.BRANCH == 'master' }
-            }
             agent { label 'linux-agent-2' }
             steps {
                 unstash 'source-code'
@@ -141,7 +118,6 @@ pipeline {
                 sh 'pytest test/integration/todoApiTest.py -m readonly'
             }
         }
-
     }
 
     post {
