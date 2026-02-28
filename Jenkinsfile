@@ -39,7 +39,8 @@ pipeline {
                     echo "BASE_URL: ${env.BASE_URL}"
                 }
 
-                sh 'pytest test/integration/todoApiTest.py -k "read or get or list"'
+                  // Production: SOLO tests de lectura (no modifica datos)
+                 sh 'pytest test/integration/todoApiTest.py -m readonly'
             }
         }
     }
