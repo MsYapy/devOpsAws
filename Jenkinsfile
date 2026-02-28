@@ -85,6 +85,9 @@ pipeline {
                 sshagent(['yy']) {
                     script {
                         sh '''
+                            # Limpiar archivos generados por Static Analysis
+                            rm -f bandit.out flake8.out
+
                             git remote set-url origin git@github.com:MsYapy/devOpsAws.git
 
                             git config user.email "jenkins@ci.local"
