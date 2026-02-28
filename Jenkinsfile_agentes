@@ -1,24 +1,17 @@
 pipeline {
     agent none
 
-    parameters {
-        choice(
-            name: 'BRANCH',
-            choices: ['develop', 'master'],
-            description: 'Rama a ejecutar'
-        )
-    }
-
     stages {
         stage('Get Code') {
             agent { label 'linux-agent-1' }
             steps {
-                git branch: "${params.BRANCH}",
+                git branch: env.BRANCH_NAME ?: 'develop',
                     url: 'https://github.com/MsYapy/devOpsAws.git',
                     credentialsId: 'yy'
 
                 script {
-                    echo "Rama seleccionada: ${params.BRANCH}"
+                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    echo "Rama detectada: ${env.GIT_BRANCH}"
                 }
                 stash includes: '**', name: 'source-code'
             }
@@ -30,7 +23,7 @@ pipeline {
 
         stage('Static Analysis') {
             when {
-                expression { params.BRANCH == 'develop' }
+                expression { env.GIT_BRANCH == 'develop' }
             }
             parallel {
                 stage('Bandit Security') {
@@ -54,7 +47,7 @@ pipeline {
 
         stage('Deploy Staging') {
             when {
-                expression { params.BRANCH == 'develop' }
+                expression { env.GIT_BRANCH == 'develop' }
             }
             agent { label 'linux-agent-1' }
             steps {
@@ -76,7 +69,7 @@ pipeline {
 
         stage('Rest Test Staging') {
             when {
-                expression { params.BRANCH == 'develop' }
+                expression { env.GIT_BRANCH == 'develop' }
             }
             agent { label 'linux-agent-2' }
             steps {
@@ -101,7 +94,7 @@ pipeline {
 
         stage('Deploy Production') {
             when {
-                expression { params.BRANCH == 'master' }
+                expression { env.GIT_BRANCH == 'master' }
             }
             agent { label 'linux-agent-1' }
             steps {
@@ -123,7 +116,7 @@ pipeline {
 
         stage('Rest Test Production') {
             when {
-                expression { params.BRANCH == 'master' }
+                expression { env.GIT_BRANCH == 'master' }
             }
             agent { label 'linux-agent-2' }
             steps {
@@ -141,7 +134,6 @@ pipeline {
                 sh 'pytest test/integration/todoApiTest.py -m readonly'
             }
         }
-
     }
 
     post {
