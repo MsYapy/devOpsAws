@@ -5,26 +5,22 @@ pipeline {
         stage('Get Code') {
             agent { label 'linux-agent-1' }
             steps {
-                git branch: env.BRANCH_NAME ?: 'develop',
+                git branch: 'develop',
                     url: 'https://github.com/MsYapy/devOpsAws.git',
                     credentialsId: 'yy'
 
                 script {
-                    env.GIT_BRANCH = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    echo "Rama detectada: ${env.GIT_BRANCH}"
+                    echo "Iniciando pipeline CI/CD completo"
                 }
                 stash includes: '**', name: 'source-code'
             }
         }
 
         // =============================================
-        // STAGES CI - Solo rama develop
+        // STAGES CI - Staging
         // =============================================
 
         stage('Static Analysis') {
-            when {
-                expression { env.GIT_BRANCH == 'develop' }
-            }
             parallel {
                 stage('Bandit Security') {
                     agent { label 'linux-agent-1' }
@@ -46,9 +42,6 @@ pipeline {
         }
 
         stage('Deploy Staging') {
-            when {
-                expression { env.GIT_BRANCH == 'develop' }
-            }
             agent { label 'linux-agent-1' }
             steps {
                 unstash 'source-code'
@@ -68,9 +61,6 @@ pipeline {
         }
 
         stage('Rest Test Staging') {
-            when {
-                expression { env.GIT_BRANCH == 'develop' }
-            }
             agent { label 'linux-agent-2' }
             steps {
                 unstash 'source-code'
@@ -80,7 +70,7 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    echo "BASE_URL: ${env.BASE_URL}"
+                    echo "BASE_URL Staging: ${env.BASE_URL}"
                 }
 
                 // Staging: ejecuta TODOS los tests (lectura y escritura)
@@ -89,13 +79,10 @@ pipeline {
         }
 
         // =============================================
-        // STAGES CD - Solo rama master (Production)
+        // STAGES CD - Production
         // =============================================
 
         stage('Deploy Production') {
-            when {
-                expression { env.GIT_BRANCH == 'master' }
-            }
             agent { label 'linux-agent-1' }
             steps {
                 unstash 'source-code'
@@ -115,9 +102,6 @@ pipeline {
         }
 
         stage('Rest Test Production') {
-            when {
-                expression { env.GIT_BRANCH == 'master' }
-            }
             agent { label 'linux-agent-2' }
             steps {
                 unstash 'source-code'
