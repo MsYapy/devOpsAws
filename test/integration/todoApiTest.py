@@ -14,6 +14,7 @@ DEFAULT_TIMEOUT = 2  # in secs
 
 @pytest.mark.api
 class TestApi(unittest.TestCase):
+    """Tests que modifican datos - solo para staging"""
     
     def setUp(self):
         self.assertIsNotNone(BASE_URL, "URL no configurada")
@@ -200,3 +201,35 @@ class TestApi(unittest.TestCase):
         )
         print('End - integration test Delete TODO')
     
+
+
+@pytest.mark.readonly
+class TestApiReadOnly(unittest.TestCase):
+    """Tests de solo lectura - seguros para production"""
+    
+    def setUp(self):
+        self.assertIsNotNone(BASE_URL, "URL no configurada")
+        self.assertTrue(len(BASE_URL) > 8, "URL no configurada")
+
+    def test_api_list_readonly(self):
+        """Test GET /todos - solo lectura"""
+        print('---------------------------------------')
+        print('Starting - readonly test List TODO')
+        url = BASE_URL + "/todos"
+        response = requests.get(url)
+        print('Response List Todo: ' + str(response.status_code))
+        self.assertEqual(
+            response.status_code, 200, f"Error en la petición API a {url}"
+        )
+        print('End - readonly test List TODO')
+
+    def test_api_health_check(self):
+        """Test básico de conectividad - solo lectura"""
+        print('---------------------------------------')
+        print('Starting - readonly health check')
+        url = BASE_URL + "/todos"
+        response = requests.get(url)
+        self.assertIn(
+            response.status_code, [200, 404], f"API no responde correctamente en {url}"
+        )
+        print('End - readonly health check')
