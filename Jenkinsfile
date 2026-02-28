@@ -90,6 +90,9 @@ pipeline {
                             git config user.email "jenkins@ci.local"
                             git config user.name "Jenkins CI"
 
+                            # Limpiar archivos generados que bloquean el checkout
+                            rm -f bandit.out flake8.out
+
                             git fetch origin master
                             git checkout master || git checkout -b master origin/master
 
