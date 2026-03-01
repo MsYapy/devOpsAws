@@ -86,38 +86,34 @@ pipeline {
                 expression { params.BRANCH == 'develop' }
             }
             steps {
-                sshagent(['yy']) {
-                    script {
-                        sh '''
-                            git remote set-url origin git@github.com:MsYapy/devOpsAws.git
+                withCredentials([usernamePassword(credentialsId: 'a55f9604-687f-4ad2-b248-66915d8f6a45', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    sh '''
+                        git config user.email "jenkins@ci.local"
+                        git config user.name "Jenkins CI"
 
-                            git config user.email "jenkins@ci.local"
-                            git config user.name "Jenkins CI"
+                        # Limpiar archivos generados que bloquean el checkout
+                        rm -f bandit.out flake8.out
 
-                            # Limpiar archivos generados que bloquean el checkout
-                            rm -f bandit.out flake8.out
+                        git fetch origin master
+                        git checkout master || git checkout -b master origin/master
 
-                            git fetch origin master
-                            git checkout master || git checkout -b master origin/master
+                        # Guardar Jenkinsfile de master antes del merge
+                        git show HEAD:Jenkinsfile > /tmp/Jenkinsfile.master.bak
 
-                            # Guardar Jenkinsfile de master antes del merge
-                            git show HEAD:Jenkinsfile > /tmp/Jenkinsfile.master.bak
+                        # Hacer merge
+                        git merge develop --no-edit --no-ff || {
+                            git checkout --theirs . 2>/dev/null || true
+                            git add -A
+                            git commit --no-edit -m "Merge branch 'develop'"
+                        }
 
-                            # Hacer merge
-                            git merge develop --no-edit --no-ff || {
-                                git checkout --theirs . 2>/dev/null || true
-                                git add -A
-                                git commit --no-edit -m "Merge branch 'develop'"
-                            }
+                        # Restaurar Jenkinsfile de master siempre
+                        cp /tmp/Jenkinsfile.master.bak Jenkinsfile
+                        git add Jenkinsfile
+                        git commit --amend --no-edit || true
 
-                            # Restaurar Jenkinsfile de master siempre
-                            cp /tmp/Jenkinsfile.master.bak Jenkinsfile
-                            git add Jenkinsfile
-                            git commit --amend --no-edit
-
-                            git push origin master
-                        '''
-                    }
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/MsYapy/devOpsAws.git master
+                    '''
                 }
             }
         }
