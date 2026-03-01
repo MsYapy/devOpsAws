@@ -104,7 +104,10 @@ pipeline {
                         git add Jenkinsfile
                         git commit --amend --no-edit || true
 
-                        git push https://${GIT_USER}:${GIT_PASS}@github.com/MsYapy/devOpsAws.git master
+                        git config credential.helper store
+                        echo "https://${GIT_USER}:${GIT_PASS}@github.com" > ~/.git-credentials
+                        git push origin master
+                        rm -f ~/.git-credentials
                     '''
                 }
             }
