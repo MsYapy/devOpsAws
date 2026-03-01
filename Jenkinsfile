@@ -39,6 +39,19 @@ pipeline {
             }
         }
 
+        stage('Get Config') {
+            steps {
+                script {
+                    def configBranch = (params.BRANCH == 'develop') ? 'staging' : 'production'
+                    sh """
+                        curl -s -o samconfig.toml https://raw.githubusercontent.com/MsYapy/todo-list-aws-config/${configBranch}/samconfig.toml
+                        echo "Configuración descargada desde rama: ${configBranch}"
+                        cat samconfig.toml
+                    """
+                }
+            }
+        }
+
         stage('Deploy Staging') {
             when {
                 expression { params.BRANCH == 'develop' }
@@ -46,16 +59,7 @@ pipeline {
             steps {
                 sh 'sam validate --region us-east-1'
                 sh 'sam build'
-                sh '''
-                    sam deploy \
-                        --stack-name resCP14yapy-staging \
-                        --region us-east-1 \
-                        --parameter-overrides Stage=staging \
-                        --capabilities CAPABILITY_IAM \
-                        --no-disable-rollback \
-                        --resolve-s3 \
-                        --no-fail-on-empty-changeset
-                '''
+                sh 'sam deploy --config-env staging --no-fail-on-empty-changeset'
             }
         }
 
