@@ -44,19 +44,6 @@ pipeline {
                 sh 'pytest test/integration/todoApiTest.py -m readonly'
             }
         }
-    }           script {
-                    env.BASE_URL = sh(
-                        script: "aws cloudformation describe-stacks --stack-name resCP14yapy-production --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text",
-                        returnStdout: true
-                    ).trim()
-
-                    echo "BASE_URL: ${env.BASE_URL}"
-                }
-
-                  // Production: SOLO tests de lectura (no modifica datos)
-                 sh 'pytest test/integration/todoApiTest.py -m readonly'
-            }
-        }
     }
 
     post {
