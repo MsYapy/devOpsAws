@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git branch: "${params.BRANCH}",
+                git branch: "develop",
                     url: 'https://github.com/MsYapy/devOpsAws.git',
                     credentialsId: 'yy'
 
