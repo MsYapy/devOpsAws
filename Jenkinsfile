@@ -14,9 +14,13 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git branch: 'master',
+                git branch: "${params.BRANCH}",
                     url: 'https://github.com/MsYapy/devOpsAws.git',
                     credentialsId: 'yy'
+
+                script {
+                    echo "Rama seleccionada: ${params.BRANCH}"
+                }
             }
         }
 
