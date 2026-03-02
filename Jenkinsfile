@@ -78,7 +78,12 @@ pipeline {
                     echo "BASE_URL: ${env.BASE_URL}"
                 }
 
-                sh 'pytest test/integration/todoApiTest.py'
+                sh 'pytest --junitxml=results.xml test/integration/todoApiTest.py'
+            }
+            post {
+                always {
+                    junit 'results.xml'
+                }
             }
         }
 
