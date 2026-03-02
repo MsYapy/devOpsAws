@@ -3,6 +3,14 @@ pipeline {
     agent any
     // Production
 
+    parameters {
+        choice(
+            name: 'BRANCH',
+            choices: ['develop', 'master'],
+            description: 'Rama a ejecutar'
+        )
+    }
+    
     stages {
         stage('Get Code') {
             steps {
